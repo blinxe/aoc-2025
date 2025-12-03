@@ -1,0 +1,63 @@
+{
+	// Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+	"Day template": {
+		"scope": "rust",
+		"prefix": "day",
+		"body": [
+			"use crate::utils::input::read_input;",
+			"",
+			"fn parse_input(input: &str) -> () {}",
+			"",
+			"fn solve_part_1(input: &str) {}",
+			"",
+			"fn solve_part_2(input: &str) {}",
+			"",
+			"pub fn part_1() {",
+			"    let input = read_input(module_path!());",
+			"    solve_part_1(input.as_str());",
+			"}",
+			"",
+			"pub fn part_2() {",
+			"    let input = read_input(module_path!());",
+			"    solve_part_2(input.as_str());",
+			"}",
+			"",
+			"#[cfg(test)]",
+			"mod test {",
+			"    use indoc::indoc;",
+			"",
+			"    const EXAMPLE_1: &str = indoc! {\"",
+			"    \"};",
+			"",
+			"    #[test]",
+			"    fn test_part_1() {",
+			"        super::solve_part_1(EXAMPLE_1);",
+			"    }",
+			"",
+			"    const EXAMPLE_2: &str = EXAMPLE_1;",
+			"",
+			"    #[test]",
+			"    fn test_part_2() {",
+			"        super::solve_part_2(EXAMPLE_2);",
+			"    }",
+			"}",
+			""
+		],
+		"description": "Log output to console"
+	}
+}

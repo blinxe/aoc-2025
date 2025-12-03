@@ -31,7 +31,7 @@ fn solve_part_1(input: &str) {
         })
         .sum();
 
-    println!("{}", total);
+    println!("Joltage: {}", total);
 }
 
 fn solve_part_2(input: &str) {
@@ -51,7 +51,7 @@ fn solve_part_2(input: &str) {
         })
         .sum();
 
-    println!("{}", total);
+    println!("Joltage: {}", total);
 }
 
 pub fn part_1() {
@@ -66,10 +66,14 @@ pub fn part_2() {
 
 #[cfg(test)]
 mod test {
-    const EXAMPLE_1: &str = "987654321111111
-811111111111119
-234234234234278
-818181911112111";
+    use indoc::indoc;
+
+    const EXAMPLE_1: &str = indoc! {"
+        987654321111111
+        811111111111119
+        234234234234278
+        818181911112111
+    "};
 
     #[test]
     fn test_part_1() {

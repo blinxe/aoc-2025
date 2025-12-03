@@ -58,16 +58,20 @@ pub fn part_2() {
 
 #[cfg(test)]
 mod test {
-    const EXAMPLE_1: &str = "L68
-L30
-R48
-L5
-R60
-L55
-L1
-L99
-R14
-L82";
+    use indoc::indoc;
+
+    const EXAMPLE_1: &str = indoc! {"
+        L68
+        L30
+        R48
+        L5
+        R60
+        L55
+        L1
+        L99
+        R14
+        L82
+    "};
 
     #[test]
     fn test_part_1() {
