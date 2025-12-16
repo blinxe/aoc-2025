@@ -133,19 +133,64 @@ fn get_min_presses_v2(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>) -> usize {
     }
 }
 
+fn get_highest_score_button_id(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>) -> usize {
+    buttons
+        .iter()
+        .enumerate()
+        .filter_map(|(bid, butt)| {
+            if butt.iter().any(|bid| jolts[*bid as usize] == 0) {
+                None
+            } else {
+                Some((
+                    bid,
+                    butt.iter()
+                        .map(|jid| {
+                            let j = jolts[*jid as usize] as u64;
+                            j * j
+                        })
+                        .sum::<u64>(),
+                ))
+            }
+        })
+        .inspect(|(bid, score)| println!("Score {} for {:?}", *score, buttons[*bid]))
+        .max_by_key(|(_, score)| *score)
+        .unwrap()
+        .0
+}
+
+fn push_button(jolts: &mut Vec<u16>, button: &Vec<u16>) {
+    for b in button.iter() {
+        jolts[*b as usize] -= 1;
+    }
+}
+
+fn get_min_presses_v3(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>) -> usize {
+    let mut jolts = jolts.clone();
+    let mut turns = 0;
+    while jolts.iter().any(|&j| j != 0) {
+        turns += 1;
+        println!("Turn {}: {:?}", turns, jolts);
+        let bid = get_highest_score_button_id(buttons, &jolts);
+        push_button(&mut jolts, &buttons[bid]);
+    }
+
+    println!("{turns} turns");
+    turns
+}
+
 fn solve_part_2(input: &str) {
     let configs = parse_input_v2(input);
-    // let min_presses: usize = configs
-    //     .iter()
-    //     .enumerate()
-    //     .map(|(n, bj)| {
-    //         println!("Line {}", n);
-    //         bj
-    //     })
-    //     .map(|(buttons, jolts)| get_min_presses_v2(buttons, jolts))
-    //     .sum();
+    let min_presses: usize = configs
+        .iter()
+        .enumerate()
+        .map(|(n, bj)| {
+            print!("Line {}: ", n);
+            bj
+        })
+        .map(|(buttons, jolts)| get_min_presses_v3(buttons, jolts))
+        .sum();
 
-    // println!("Fewest presses: {}", min_presses);
+    println!("Fewest presses: {}", min_presses);
 }
 
 pub fn part_1() {
