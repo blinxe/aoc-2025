@@ -37,7 +37,7 @@ fn solve_part_1(input: &str) {
     println!("{}", fitting);
 }
 
-fn solve_part_2(input: &str) {}
+fn solve_part_2(_input: &str) {}
 
 pub fn part_1() {
     let input = read_input(module_path!());
