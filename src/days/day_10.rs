@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 use regex::bytes::Regex;
 
@@ -55,7 +53,7 @@ fn solve_part_1(input: &str) {
     println!("Fewest presses: {}", min_presses);
 }
 
-fn parse_input_v2(input: &str) -> Vec<(Vec<Vec<u16>>, Vec<u16>)> {
+fn parse_input_v2(input: &str) -> Vec<(Vec<Vec<u32>>, Vec<i32>)> {
     input
         .lines()
         .map(|line| {
@@ -64,15 +62,15 @@ fn parse_input_v2(input: &str) -> Vec<(Vec<Vec<u16>>, Vec<u16>)> {
             let buttons = cap.get(2).unwrap();
             let jolts = cap.get(3).unwrap();
             let buttons = buttons.as_bytes().split(|b| *b == b' ');
-            let buttons: Vec<Vec<u16>> = buttons
+            let buttons: Vec<Vec<u32>> = buttons
                 .map(|b| {
                     let bids = b[1..b.len() - 1].split(|c| *c == b',');
-                    bids.map(|bid| (bid[0] - b'0') as u16).collect()
+                    bids.map(|bid| (bid[0] - b'0') as u32).collect()
                 })
                 .collect();
             let jolts = jolts.as_bytes().split(|b| *b == b',');
             let jolts = jolts
-                .map(|j| str::from_utf8(j).unwrap().parse::<u16>().unwrap())
+                .map(|j| str::from_utf8(j).unwrap().parse::<i32>().unwrap())
                 .collect();
 
             (buttons, jolts)
@@ -80,114 +78,104 @@ fn parse_input_v2(input: &str) -> Vec<(Vec<Vec<u16>>, Vec<u16>)> {
         .collect()
 }
 
-fn fits_jolts(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>, branch: &Vec<u16>) -> bool {
-    let mut calculated_jolts: Vec<u16> = vec![0; jolts.len()];
-    for (bid, presses) in branch.iter().enumerate() {
-        for jid in buttons[bid].iter() {
-            calculated_jolts[*jid as usize] += presses;
-        }
-    }
-    for i in 0..jolts.len() {
-        if jolts[i] != calculated_jolts[i] {
-            return false;
-        }
-    }
-    true
-}
-
-fn exceeds_jolts(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>, branch: &Vec<u16>) -> bool {
-    let mut calculated_jolts: Vec<u16> = vec![0; jolts.len()];
-    for (bid, presses) in branch.iter().enumerate() {
-        for jid in buttons[bid].iter() {
-            let jid = *jid as usize;
-            calculated_jolts[jid] += presses;
-            if calculated_jolts[jid] > jolts[jid] {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-fn get_min_presses_v2(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>) -> usize {
-    let mut branches: HashSet<Vec<u16>> = HashSet::new();
-    branches.insert(vec![0; buttons.len()]);
-    let mut presses = 0;
-    loop {
-        presses += 1;
-        println!("Turn: {}, branches: {}", presses, branches.len());
-        let mut new_branches: HashSet<Vec<u16>> = HashSet::new();
-        for b in branches.iter() {
-            for n in 0..buttons.len() {
-                let mut new = b.clone();
-                new[n] += 1;
-                if fits_jolts(buttons, jolts, &new) {
-                    return presses;
-                }
-                if !exceeds_jolts(buttons, jolts, &new) {
-                    new_branches.insert(new);
-                }
-            }
-        }
-        branches = new_branches;
-    }
-}
-
-fn get_highest_score_button_id(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>) -> usize {
+fn get_binary_buttons(buttons: &[Vec<u32>]) -> Vec<u32> {
     buttons
         .iter()
-        .enumerate()
-        .filter_map(|(bid, butt)| {
-            if butt.iter().any(|bid| jolts[*bid as usize] == 0) {
-                None
-            } else {
-                Some((
-                    bid,
-                    butt.iter()
-                        .map(|jid| {
-                            let j = jolts[*jid as usize] as u64;
-                            j * j
-                        })
-                        .sum::<u64>(),
-                ))
+        .map(|b| b.iter().map(|n| 1u32 << n).sum())
+        .collect()
+}
+
+fn get_combinations<T: Copy>(set: &[T], count: usize) -> Vec<Vec<T>> {
+    if count == 0 {
+        vec![Vec::new()]
+    } else {
+        set[..set.len() - count + 1]
+            .iter()
+            .enumerate()
+            .flat_map(|(i, &t)| {
+                get_combinations(&set[i + 1..], count - 1)
+                    .iter()
+                    .map(|c| {
+                        let mut c1 = c.clone();
+                        c1.push(t);
+                        c1
+                    })
+                    .collect::<Vec<Vec<T>>>()
+            })
+            .collect()
+    }
+}
+
+fn subsets<T: Copy>(set: &[T]) -> Vec<Vec<T>> {
+    let mut subsets: Vec<Vec<T>> = Vec::new();
+    for count in 0..=set.len() {
+        subsets.extend(get_combinations(set, count));
+    }
+    subsets
+}
+
+// I gave up, went to Reddit and found this hint:
+// https://www.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
+// > find all possible sets of buttons you can push so that the remaining voltages are even, and divide by 2 and recurse.
+fn fewest_joltage_presses(buttons: &Vec<Vec<u32>>, jolts: &Vec<i32>) -> usize {
+    let binary_buttons = get_binary_buttons(buttons);
+    let subset_xors: Vec<_> = subsets(&binary_buttons)
+        .iter()
+        .map(|subset| (subset.to_owned(), subset.iter().fold(0, |a, &b| a ^ b)))
+        .collect();
+    fewest_joltage_presses_recur(&subset_xors, jolts).unwrap()
+}
+
+fn fewest_joltage_presses_recur(
+    subset_xors: &[(Vec<u32>, u32)],
+    joltages: &[i32],
+) -> Option<usize> {
+    if joltages.iter().all(|&j| j == 0) {
+        return Some(0);
+    }
+    let binary_joltages = get_binary_joltages(joltages);
+    let mut best = None;
+    for (subset, xor) in subset_xors {
+        if *xor == binary_joltages {
+            let new_joltages = get_new_joltages(joltages, &subset);
+            if new_joltages.iter().all(|&j| j >= 0) {
+                let press_count = fewest_joltage_presses_recur(subset_xors, &new_joltages)
+                    .map(|c| subset.len() + 2 * c);
+                best = best.min(press_count).or(best).or(press_count);
             }
-        })
-        .inspect(|(bid, score)| println!("Score {} for {:?}", *score, buttons[*bid]))
-        .max_by_key(|(_, score)| *score)
-        .unwrap()
-        .0
+        }
+    }
+    best
 }
 
-fn push_button(jolts: &mut Vec<u16>, button: &Vec<u16>) {
-    for b in button.iter() {
-        jolts[*b as usize] -= 1;
+fn get_new_joltages(joltages: &[i32], subset: &[u32]) -> Vec<i32> {
+    let mut new_joltages = Vec::new();
+    let mut mask = 1;
+    for &joltage in joltages {
+        new_joltages.push((joltage - subset.iter().filter(|&b| b & mask != 0).count() as i32) / 2);
+        mask <<= 1;
     }
+    new_joltages
 }
 
-fn get_min_presses_v3(buttons: &Vec<Vec<u16>>, jolts: &Vec<u16>) -> usize {
-    let mut jolts = jolts.clone();
-    let mut turns = 0;
-    while jolts.iter().any(|&j| j != 0) {
-        turns += 1;
-        println!("Turn {}: {:?}", turns, jolts);
-        let bid = get_highest_score_button_id(buttons, &jolts);
-        push_button(&mut jolts, &buttons[bid]);
-    }
-
-    println!("{turns} turns");
-    turns
+fn get_binary_joltages(joltages: &[i32]) -> u32 {
+    joltages
+        .iter()
+        .enumerate()
+        .map(|(i, j)| ((1 << i) * (j % 2)) as u32)
+        .sum()
 }
 
 fn solve_part_2(input: &str) {
     let configs = parse_input_v2(input);
     let min_presses: usize = configs
         .iter()
-        .enumerate()
-        .map(|(n, bj)| {
-            print!("Line {}: ", n);
-            bj
-        })
-        .map(|(buttons, jolts)| get_min_presses_v3(buttons, jolts))
+        // .enumerate()
+        // .map(|(n, bj)| {
+        //     print!("Line {}: ", n);
+        //     bj
+        // })
+        .map(|(buttons, jolts)| fewest_joltage_presses(buttons, jolts))
         .sum();
 
     println!("Fewest presses: {}", min_presses);

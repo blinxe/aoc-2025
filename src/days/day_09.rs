@@ -117,6 +117,7 @@ fn solve_part_2(input: &str) {
     // println!("{:?}", vseg);
     // println!("{:?}", hseg);
 
+    let mut max_rect = Rect::new(&Point { x: 0, y: 0 }, &Point { x: 0, y: 0 });
     let mut max_area = 0u64;
     for p1 in 0..points.len() - 1 {
         'next_rect: for p2 in p1 + 1..points.len() {
@@ -257,12 +258,13 @@ fn solve_part_2(input: &str) {
 
             let area = r.area();
             if area > max_area {
+                max_rect = r;
                 max_area = area;
             }
         }
     }
 
-    println!("Largest rectangle {}", max_area);
+    println!("Largest rectangle: {:?}, area: {}", max_rect, max_area);
 }
 
 pub fn part_1() {
